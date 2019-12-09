@@ -118,6 +118,28 @@ func (m *psqlCoinRepository) GetLatestPrice(ctx context.Context, symbol string) 
 	return
 }
 
+func (m *psqlCoinRepository) Store(ctx context.Context, c *models.Coin) error {
+	query := `INSERT INTO public.coins(volume, reserve_balance, price, capitalization, symbol)
+	VALUES ($1, $2, $3, $4, $5)`
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	res, err := stmt.ExecContext(ctx, c.Volume, c.ReserveBalance, c.Price, c.Capitalization, c.Symbol)
+	if err != nil {
+		return err
+	}
+
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	c.ID = uint64(lastID)
+	return nil
+}
+
 // DecodeCursor will decode cursor from user for mysql
 func DecodeCursor(encodedTime string) (time.Time, error) {
 	byt, err := base64.StdEncoding.DecodeString(encodedTime)
