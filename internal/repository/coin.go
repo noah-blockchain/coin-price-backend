@@ -6,26 +6,25 @@ import (
 	"encoding/base64"
 	"time"
 
+	"github.com/noah-blockchain/coin-price-backend/internal/models"
+	"github.com/noah-blockchain/coin-price-backend/internal/usecase"
 	"github.com/sirupsen/logrus"
-
-	"github.com/noah-blockchain/coin-price-backend/coin"
-	"github.com/noah-blockchain/coin-price-backend/models"
 )
 
 const (
 	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 )
 
-type psqlCoinRepository struct {
+type repo struct {
 	Conn *sql.DB
 }
 
 // NewPsqlCoinRepository will create an object that represent the article.Repository interface
-func NewPsqlCoinRepository(Conn *sql.DB) coin.Repository {
-	return &psqlCoinRepository{Conn}
+func NewPsqlCoinRepository(Conn *sql.DB) usecase.Repository {
+	return &repo{Conn}
 }
 
-func (m *psqlCoinRepository) fetch(ctx context.Context, query string, args ...interface{}) ([]*models.Coin, error) {
+func (m *repo) fetch(ctx context.Context, query string, args ...interface{}) ([]*models.Coin, error) {
 	rows, err := m.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		logrus.Error(err)
@@ -63,7 +62,7 @@ func (m *psqlCoinRepository) fetch(ctx context.Context, query string, args ...in
 	return result, nil
 }
 
-func (m *psqlCoinRepository) Fetch(ctx context.Context, cursor string, num int64) ([]*models.Coin, string, error) {
+func (m *repo) Fetch(ctx context.Context, cursor string, num int64) ([]*models.Coin, string, error) {
 	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM coins WHERE created_at > ? ORDER BY created_at LIMIT ? `
 
 	decodedCursor, err := DecodeCursor(cursor)
@@ -84,7 +83,7 @@ func (m *psqlCoinRepository) Fetch(ctx context.Context, cursor string, num int64
 	return res, nextCursor, err
 }
 
-func (m *psqlCoinRepository) GetByID(ctx context.Context, id int64) (res *models.Coin, err error) {
+func (m *repo) GetByID(ctx context.Context, id int64) (res *models.Coin, err error) {
 	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM coins WHERE ID = $1`
 
 	list, err := m.fetch(ctx, query, id)
@@ -101,7 +100,7 @@ func (m *psqlCoinRepository) GetByID(ctx context.Context, id int64) (res *models
 	return
 }
 
-func (m *psqlCoinRepository) GetLatestPrice(ctx context.Context, symbol string) (res *models.Coin, err error) {
+func (m *repo) GetLatestPrice(ctx context.Context, symbol string) (res *models.Coin, err error) {
 	query := `SELECT * FROM coins WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`
 
 	list, err := m.fetch(ctx, query, symbol)
@@ -118,7 +117,7 @@ func (m *psqlCoinRepository) GetLatestPrice(ctx context.Context, symbol string) 
 	return
 }
 
-func (m *psqlCoinRepository) Store(ctx context.Context, c *models.Coin) error {
+func (m *repo) Store(ctx context.Context, c *models.Coin) error {
 	query := `INSERT INTO public.coins(volume, reserve_balance, price, capitalization, symbol)
 	VALUES ($1, $2, $3, $4, $5)`
 	stmt, err := m.Conn.PrepareContext(ctx, query)

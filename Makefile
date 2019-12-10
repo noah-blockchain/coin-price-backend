@@ -1,36 +1,41 @@
-BINARY=engine
-test: 
-	go test -v -cover -covermode=atomic ./...
+APP ?= coin-history
+VERSION ?= $(strip $(shell cat VERSION))
+GOOS ?= linux
+SRC = ./
 
-engine:
-	go build -o ${BINARY} main.go
+COMMIT = $(shell git rev-parse --short HEAD)
+BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
+CHANGES = $(shell git rev-list --count ${COMMIT})
+BUILDED ?= $(shell date -u '+%Y-%m-%dT%H:%M:%S')
+BUILD_FLAGS = "-X main.Version=$(VERSION) -X main.GitCommit=$(COMMIT) -X main.BuildedDate=$(BUILDED)"
+BUILD_TAGS?=coin-price-backend
+DOCKER_TAG = latest
+PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 
-unittest:
-	go test -short  ./...
+all: test build
+
+#Run this from CI
+create_vendor:
+	@rm -rf vendor/
+	@echo "--> Running go mod vendor"
+	@go mod vendor
+
+### Build ###################
+build: clean
+	GOOS=${GOOS} go build -ldflags $(BUILD_FLAGS) -o ./build/$(APP) -i ./cmd/coin-history
+
+install:
+	GOOS=${GOOS} go install -ldflags $(BUILD_FLAGS) -i ./cmd/coin-history
 
 clean:
-	if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
+	@rm -f $(BINARY)
 
-docker:
-	docker build -t go-clean-arch .
+### Test ####################
+test:
+	@echo "--> Running tests"
+	go test -v ${SRC}
 
-run:
-	docker-compose up -d
+fmt:
+	@go fmt ./...
 
-stop:
-	docker-compose down
-
-lint-prepare:
-	@echo "Installing golangci-lint" 
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s latest
-
-lint:
-	./bin/golangci-lint run \
-		--exclude-use-default=false \
-		--enable=golint \
-		--enable=gocyclo \
-		--enable=goconst \
-		--enable=unconvert \
-		./...
-
-.PHONY: clean install unittest build docker run stop vendor lint-prepare lint
+.PHONY: create_vendor build clean fmt test
