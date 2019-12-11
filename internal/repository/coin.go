@@ -152,7 +152,7 @@ func (m *repo) GetBySymbol(ctx context.Context, symbol string) (res []*models.Co
 
 func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (res []*models.Coin, err error) {
 	query := `SELECT date_trunc('day', created_at) AS "day", AVG(price) 
-				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<=$3
+				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<$3
 				GROUP BY 1 
 				ORDER BY 1`
 	logrus.Info(start)
