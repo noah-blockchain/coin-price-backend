@@ -3,16 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/noah-blockchain/coin-price-backend/internal/api"
 	"github.com/noah-blockchain/coin-price-backend/internal/config"
 	"github.com/noah-blockchain/coin-price-backend/internal/env"
@@ -71,8 +72,7 @@ func main() {
 	handler := api.NewCoinPriceHandler(app)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/price/{symbol}", handler.GetCoinPrice).Methods("GET")
-
+	router.HandleFunc("/prices/{symbol}", handler.GetAllRecords).Methods("GET")
 	fmt.Println("Starting coin-history service with port", cfg.ServicePort)
 	log.Panicln(http.ListenAndServe(fmt.Sprintf(":%d", cfg.ServicePort), router))
 }

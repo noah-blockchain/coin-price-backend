@@ -21,7 +21,7 @@ $ cd workspace
 $ git clone https://github.com/noah-blockchain/coin-price-backend.git
 
 #move to project
-$ cd go-clean-arch
+$ cd coin-price-backend
 
 # Build the docker image first
 $ make docker

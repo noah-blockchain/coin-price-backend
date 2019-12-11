@@ -62,6 +62,39 @@ func (m *repo) fetch(ctx context.Context, query string, args ...interface{}) ([]
 	return result, nil
 }
 
+func (m *repo) fetchByDate(ctx context.Context, query string, args ...interface{}) ([]*models.Coin, error) {
+	rows, err := m.Conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	result := make([]*models.Coin, 0)
+	for rows.Next() {
+		t := new(models.Coin)
+		err = rows.Scan(
+			&t.CreatedAt,
+			&t.Price,
+		)
+
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+
+		result = append(result, t)
+	}
+
+	return result, nil
+}
+
 func (m *repo) Fetch(ctx context.Context, cursor string, num int64) ([]*models.Coin, string, error) {
 	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM coins WHERE created_at > ? ORDER BY created_at LIMIT ? `
 
@@ -93,6 +126,44 @@ func (m *repo) GetByID(ctx context.Context, id int64) (res *models.Coin, err err
 
 	if len(list) > 0 {
 		res = list[0]
+	} else {
+		return nil, models.ErrNotFound
+	}
+
+	return
+}
+
+func (m *repo) GetBySymbol(ctx context.Context, symbol string) (res []*models.Coin, err error) {
+	query := `SELECT * FROM coins WHERE symbol = $1`
+
+	list, err := m.fetch(ctx, query, symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) > 0 {
+		res = list
+	} else {
+		return nil, models.ErrNotFound
+	}
+
+	return
+}
+
+func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (res []*models.Coin, err error) {
+	query := `SELECT date_trunc('day', created_at) AS "day", AVG(price) 
+				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<=$3
+				GROUP BY 1 
+				ORDER BY 1`
+	logrus.Info(start)
+	logrus.Info(end)
+	list, err := m.fetchByDate(ctx, query, symbol, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) > 0 {
+		res = list
 	} else {
 		return nil, models.ErrNotFound
 	}
