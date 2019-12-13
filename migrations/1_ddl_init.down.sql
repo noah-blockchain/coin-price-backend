@@ -1,0 +1,2 @@
+DROP TABLE coins;
+DROP SCHEMA public;

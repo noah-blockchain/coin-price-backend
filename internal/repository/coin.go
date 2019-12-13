@@ -189,24 +189,18 @@ func (m *repo) GetLatestPrice(ctx context.Context, symbol string) (res *models.C
 }
 
 func (m *repo) Store(ctx context.Context, c *models.Coin) error {
-	query := `INSERT INTO public.coins(volume, reserve_balance, price, capitalization, symbol)
-	VALUES ($1, $2, $3, $4, $5)`
+	query := `INSERT INTO public.coins(volume, reserve_balance, price, capitalization, symbol, created_at)
+	VALUES ($1, $2, $3, $4, $5, $6)`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
 
-	res, err := stmt.ExecContext(ctx, c.Volume, c.ReserveBalance, c.Price, c.Capitalization, c.Symbol)
+	_, err = stmt.ExecContext(ctx, c.Volume, c.ReserveBalance, c.Price, c.Capitalization, c.Symbol, c.CreatedAt)
 	if err != nil {
 		return err
 	}
 
-	lastID, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	c.ID = uint64(lastID)
 	return nil
 }
 

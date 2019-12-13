@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	coin_extender "github.com/noah-blockchain/coinExplorer-tools"
 	"time"
 
 	"github.com/noah-blockchain/coin-price-backend/internal/models"
@@ -17,6 +18,7 @@ type app struct {
 type Usecase interface {
 	GetLatestPrice(ctx context.Context, symbol string) (*models.Coin, error)
 	GetBySymbol(ctx context.Context, symbol string, date string, period string) ([]*models.Coin, error)
+	CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error
 }
 
 // Repository represent the coin's repository contract
@@ -76,4 +78,15 @@ func (a *app) GetBySymbol(c context.Context, symbol string, date string, period 
 	}
 
 	return res, nil
+}
+
+func (a *app) CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error {
+	return a.repo.Store(ctx, &models.Coin{
+		Symbol:         coin.Symbol,
+		Price:          coin.Price,
+		Capitalization: coin.Capitalization,
+		ReserveBalance: coin.ReserveBalance,
+		Volume:         coin.Volume,
+		CreatedAt:      time.Unix(coin.CreatedAt.Seconds, int64(coin.CreatedAt.Nanos)),
+	})
 }
