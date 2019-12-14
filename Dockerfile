@@ -1,6 +1,6 @@
-# docker build --no-cache -t node:latest -f Dockerfile .
-# docker build -t noah-extender:latest -f DOCKER/Dockerfile .
-# docker run -d -p 127.0.0.1:9000:9000 --restart=always noah-extender:latest
+# docker build --no-cache -t coin-price-backend:latest -f Dockerfile .
+# docker build -t coin-price-backend:latest -f Dockerfile .
+# docker run -d -p 127.0.0.1:10500:10500 --restart=always coin-price-backend:latest
 
 FROM golang:1.12-buster as builder
 
@@ -13,7 +13,11 @@ WORKDIR ${APP_PATH}
 RUN make create_vendor && make build
 
 FROM debian:buster-slim as executor
+
 COPY --from=builder /home/coin-price-backend/build/coin-history /usr/local/bin/coin-history
+
+COPY --from=builder /home/coin-price-backend/migrations /migrations
+
 EXPOSE 10500
 CMD ["coin-history"]
 STOPSIGNAL SIGTERM

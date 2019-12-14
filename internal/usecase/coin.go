@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	coin_extender "github.com/noah-blockchain/coinExplorer-tools"
 	"time"
 
 	"github.com/noah-blockchain/coin-price-backend/internal/models"
+	coin_extender "github.com/noah-blockchain/coinExplorer-tools"
 )
 
 type app struct {
@@ -23,7 +23,6 @@ type Usecase interface {
 
 // Repository represent the coin's repository contract
 type Repository interface {
-	Fetch(ctx context.Context, cursor string, num int64) (res []*models.Coin, nextCursor string, err error)
 	GetByID(ctx context.Context, id int64) (*models.Coin, error)
 	GetLatestPrice(ctx context.Context, symbol string) (*models.Coin, error)
 	Store(ctx context.Context, coin *models.Coin) error

@@ -3,16 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"time"
 
 	"github.com/noah-blockchain/coin-price-backend/internal/models"
 	"github.com/noah-blockchain/coin-price-backend/internal/usecase"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 )
 
 type repo struct {
@@ -93,27 +88,6 @@ func (m *repo) fetchByDate(ctx context.Context, query string, args ...interface{
 	}
 
 	return result, nil
-}
-
-func (m *repo) Fetch(ctx context.Context, cursor string, num int64) ([]*models.Coin, string, error) {
-	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM coins WHERE created_at > ? ORDER BY created_at LIMIT ? `
-
-	decodedCursor, err := DecodeCursor(cursor)
-	if err != nil && cursor != "" {
-		return nil, "", models.ErrBadParamInput
-	}
-
-	res, err := m.fetch(ctx, query, decodedCursor, num)
-	if err != nil {
-		return nil, "", err
-	}
-
-	nextCursor := ""
-	if len(res) == int(num) {
-		nextCursor = EncodeCursor(res[len(res)-1].CreatedAt)
-	}
-
-	return res, nextCursor, err
 }
 
 func (m *repo) GetByID(ctx context.Context, id int64) (res *models.Coin, err error) {
@@ -202,24 +176,4 @@ func (m *repo) Store(ctx context.Context, c *models.Coin) error {
 	}
 
 	return nil
-}
-
-// DecodeCursor will decode cursor from user for mysql
-func DecodeCursor(encodedTime string) (time.Time, error) {
-	byt, err := base64.StdEncoding.DecodeString(encodedTime)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	timeString := string(byt)
-	t, err := time.Parse(timeFormat, timeString)
-
-	return t, err
-}
-
-// EncodeCursor will encode cursor from mysql to user
-func EncodeCursor(t time.Time) string {
-	timeString := t.Format(timeFormat)
-
-	return base64.StdEncoding.EncodeToString([]byte(timeString))
 }
