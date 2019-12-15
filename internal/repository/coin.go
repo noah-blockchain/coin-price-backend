@@ -129,8 +129,6 @@ func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, en
 				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<$3
 				GROUP BY 1 
 				ORDER BY 1`
-	logrus.Info(start)
-	logrus.Info(end)
 	list, err := m.fetchByDate(ctx, query, symbol, start, end)
 	if err != nil {
 		return nil, err
