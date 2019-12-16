@@ -1,6 +1,6 @@
 # coin-price-backend
 ### How To Run This Project
-> Make Sure you have run the coins.sql in your mysql
+> Make Sure you have run the coins.sql in your postgres
 
 Since the project already use Go Module, I recommend to put the source code in any folder but GOPATH.
 
@@ -21,7 +21,7 @@ $ cd workspace
 $ git clone https://github.com/noah-blockchain/coin-price-backend.git
 
 #move to project
-$ cd go-clean-arch
+$ cd coin-price-backend
 
 # Build the docker image first
 $ make docker
@@ -33,7 +33,7 @@ $ make run
 $ docker ps
 
 # Execute the call
-$ curl localhost:9090/price?symbol=Noah
+$ curl localhost:10500/price/NOAH
 
 # Stop
 $ make stop

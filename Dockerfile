@@ -1,26 +1,22 @@
-# Builder
-FROM golang:1.12.8-alpine3.10 as builder
+# docker build --no-cache -t coin-price-backend:latest -f Dockerfile .
+# docker build -t coin-price-backend:latest -f Dockerfile .
+# docker run -d -p 127.0.0.1:10500:10500 --restart=always coin-price-backend:latest
 
-RUN apk update && apk upgrade && \
-    apk --update add git make
+FROM golang:1.12-buster as builder
 
-WORKDIR /app
+ENV APP_PATH /home/coin-price-backend
 
-COPY . .
+COPY . ${APP_PATH}
 
-RUN make engine
+WORKDIR ${APP_PATH}
 
-# Distribution
-FROM alpine:latest
+RUN make create_vendor && make build
 
-RUN apk update && apk upgrade && \
-    apk --update --no-cache add tzdata && \
-    mkdir /app 
+FROM debian:buster-slim as executor
 
-WORKDIR /app 
+COPY --from=builder /home/coin-price-backend/build/coin-history /usr/local/bin/coin-history
 
-EXPOSE 9090
+COPY --from=builder /home/coin-price-backend/migrations /migrations
 
-COPY --from=builder /app/engine /app
-
-CMD /app/engine
+CMD ["coin-history"]
+STOPSIGNAL SIGTERM
