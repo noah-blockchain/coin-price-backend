@@ -18,6 +18,5 @@ COPY --from=builder /home/coin-price-backend/build/coin-history /usr/local/bin/c
 
 COPY --from=builder /home/coin-price-backend/migrations /migrations
 
-EXPOSE 10500
 CMD ["coin-history"]
 STOPSIGNAL SIGTERM

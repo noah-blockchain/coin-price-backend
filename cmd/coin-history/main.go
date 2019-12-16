@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
@@ -57,7 +58,6 @@ func main() {
 		log.Panicf("Invalid value %d for field %s", cfg.ServicePort, "service_port")
 	case cfg.DbPort <= 0:
 		log.Panicf("Invalid value %d for field %s", cfg.DbPort, "db.port")
-
 	}
 
 	dbDsnString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
@@ -67,6 +67,9 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
+	dbConn.SetMaxIdleConns(10)
+	dbConn.SetMaxOpenConns(100)
+	dbConn.SetConnMaxLifetime(time.Hour)
 	defer dbConn.Close()
 	fmt.Println("DB connected successful!")
 
@@ -115,9 +118,6 @@ func runMigrations(driver database.Driver) error {
 		log.Printf("Cannot create migrate instance: %s", err)
 		return err
 	}
-	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Printf("Migration error: %s", err)
-		return err
-	}
+	_ = m.Steps(2)
 	return nil
 }

@@ -50,7 +50,7 @@ func TestGetByDate(t *testing.T) {
 	}
 	start := end.AddDate(0, 0, -1)
 	// should return avg coin price for the day 10-12-2019
-	res, err := rep.GetByDate(context.TODO(), "Noah", start, end)
+	res, err := rep.GetByDate(context.TODO(), "NOAH", start, end)
 	if err != nil {
 		t.Error(err)
 	}

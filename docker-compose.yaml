@@ -1,8 +1,8 @@
 version: '3.6'
 
 volumes:
-  app-db-coin-history2:
-  nats_streaming_1_noah:
+  app-db-coin-history:
+  nats_streaming_1:
 
 services:
   db:
@@ -11,11 +11,11 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_DB: coin-history
+      POSTGRES_DB: coin-history-test
       POSTGRES_USER: noah
       POSTGRES_PASSWORD: password
     volumes:
-      - app-db-coin-history2:/var/lib/postgresql/data
+      - app-db-coin-history:/var/lib/postgresql/data
 
   nats-1:
     image: "nats:2"
@@ -33,7 +33,7 @@ services:
     depends_on:
       - nats-1
     volumes:
-      - nats_streaming_1_noah:/data_node
+      - nats_streaming_1:/data_node
 
   coin-price-backend:
     build:
@@ -44,7 +44,7 @@ services:
       DB_HOST: db
       DB_USER: noah
       DB_PASSWORD: password
-      DB_NAME: coin-history
+      DB_NAME: coin-history-test
       SERVICE_PORT: 10500
       DEBUG: "true"
       NATS_CLUSTER_ID: event
