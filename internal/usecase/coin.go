@@ -16,18 +16,15 @@ type app struct {
 
 // Usecase represent the coin's usecases
 type Usecase interface {
-	GetLatestPrice(ctx context.Context, symbol string) (*models.Coin, error)
-	GetBySymbol(ctx context.Context, symbol string, date string, period string) ([]*models.Coin, error)
 	CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error
+	GetBySymbol(ctx context.Context, symbol string, date string, period string) (*[]models.Coin, error)
 }
 
 // Repository represent the coin's repository contract
 type Repository interface {
-	GetByID(ctx context.Context, id int64) (*models.Coin, error)
-	GetLatestPrice(ctx context.Context, symbol string) (*models.Coin, error)
 	Store(ctx context.Context, coin *models.Coin) error
-	GetBySymbol(ctx context.Context, symbol string) ([]*models.Coin, error)
-	GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) ([]*models.Coin, error)
+	GetBySymbol(ctx context.Context, symbol string) (*[]models.Coin, error)
+	GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (*[]models.Coin, error)
 }
 
 // NewCoinUsecase will create new an articleUsecase object representation of article.Usecase interface
@@ -37,24 +34,16 @@ func NewCoinUsecase(repo Repository) Usecase {
 	}
 }
 
-func (a *app) GetLatestPrice(c context.Context, symbol string) (*models.Coin, error) {
-	res, err := a.repo.GetLatestPrice(c, symbol)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (a *app) GetBySymbol(c context.Context, symbol string, date string, period string) ([]*models.Coin, error) {
+func (a *app) GetBySymbol(c context.Context, symbol string, date string, period string) (*[]models.Coin, error) {
 	if date != "" || period != "" {
 		layout := "02-01-2006"
 		end, err := time.Parse(layout, date)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Failed to parse date format : %s", date))
 		}
+		end = end.Add((23*60*60 + 59*60 + 59) * time.Second) // date must be with 23:59:59 time in the end
+
 		var start time.Time
-		fmt.Println(end)
 		switch period {
 		case "WEEK":
 			start = end.AddDate(0, 0, -7)

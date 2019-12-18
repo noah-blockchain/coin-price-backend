@@ -13,25 +13,6 @@ type CoinPrice struct {
 	Price string `json:"value"`
 }
 
-// GetCoinPrice will get latest price for given symbol
-func (a *CoinHandler) GetCoinPrice(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	symbol := vars["symbol"]
-
-	ctx := r.Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	cn, err := a.app.GetLatestPrice(ctx, symbol)
-	if err != nil {
-		respondWithError(w, getStatusCode(err), err.Error())
-		return
-	}
-
-	respondWithJSON(w, getStatusCode(err), CoinPrice{cn.CreatedAt.Format("02-01-2006"), cn.Price})
-}
-
 // GetAllSymbolRecords will get all records for given symbol
 func (a *CoinHandler) GetAllRecords(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -45,13 +26,13 @@ func (a *CoinHandler) GetAllRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coinList, err := a.app.GetBySymbol(ctx, symbol, date, period)
-	result := make([]CoinPrice, len(coinList))
-
-	if err != nil {
+	if err != nil || coinList == nil {
 		respondWithError(w, getStatusCode(err), err.Error())
 		return
 	}
-	for i, c := range coinList {
+
+	result := make([]CoinPrice, len(*coinList))
+	for i, c := range *coinList {
 		result[i].Price = c.Price
 		result[i].Date = c.CreatedAt.Format("02-01-2006")
 	}

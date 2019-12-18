@@ -92,7 +92,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	repo := repository.NewPsqlCoinRepository(dbConn.DB)
+	repo := repository.NewPsqlCoinRepository(dbConn)
 	app := usecase.NewCoinUsecase(repo)
 	handler := api.NewCoinPriceHandler(app)
 	nats_consumer.StartConsumer(sc, app)

@@ -1,16 +1,6 @@
 APP ?= coin-history
-VERSION ?= $(strip $(shell cat VERSION))
 GOOS ?= linux
 SRC = ./
-
-COMMIT = $(shell git rev-parse --short HEAD)
-BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
-CHANGES = $(shell git rev-list --count ${COMMIT})
-BUILDED ?= $(shell date -u '+%Y-%m-%dT%H:%M:%S')
-BUILD_FLAGS = "-X main.Version=$(VERSION) -X main.GitCommit=$(COMMIT) -X main.BuildedDate=$(BUILDED)"
-BUILD_TAGS?=coin-price-backend
-DOCKER_TAG = latest
-PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 
 all: test build
 
@@ -22,10 +12,10 @@ create_vendor:
 
 ### Build ###################
 build: clean
-	GOOS=${GOOS} go build -ldflags $(BUILD_FLAGS) -o ./build/$(APP) -i ./cmd/coin-history
+	GOOS=${GOOS} go build -o ./build/$(APP) -i ./cmd/coin-history
 
 install:
-	GOOS=${GOOS} go install -ldflags $(BUILD_FLAGS) -i ./cmd/coin-history
+	GOOS=${GOOS} go install -i ./cmd/coin-history
 
 clean:
 	@rm -f $(BINARY)

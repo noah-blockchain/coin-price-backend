@@ -3,16 +3,16 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/noah-blockchain/coin-price-backend/internal/config"
 	"github.com/noah-blockchain/coin-price-backend/internal/env"
 	"github.com/noah-blockchain/coin-price-backend/internal/usecase"
-	"time"
-
-	"log"
-	"os"
-	"testing"
 )
 
 var rep usecase.Repository
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	}
 	defer dbConn.Close()
 	fmt.Println("DB connected successful!")
-	rep = NewPsqlCoinRepository(dbConn.DB)
+	rep = NewPsqlCoinRepository(dbConn)
 
 	code := m.Run()
 
