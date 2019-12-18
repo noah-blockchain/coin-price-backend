@@ -91,7 +91,7 @@ func (m *repo) fetchByDate(ctx context.Context, query string, args ...interface{
 }
 
 func (m *repo) GetByID(ctx context.Context, id int64) (res *models.Coin, err error) {
-	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM coins WHERE ID = $1`
+	query := `SELECT id, volume, reserve_balance, price, capitalization, symbol, created_at FROM public.coins WHERE ID = $1`
 
 	list, err := m.fetch(ctx, query, id)
 	if err != nil {
@@ -108,7 +108,7 @@ func (m *repo) GetByID(ctx context.Context, id int64) (res *models.Coin, err err
 }
 
 func (m *repo) GetBySymbol(ctx context.Context, symbol string) (res []*models.Coin, err error) {
-	query := `SELECT * FROM coins WHERE symbol = $1`
+	query := `SELECT * FROM public.coins WHERE symbol = $1`
 
 	list, err := m.fetch(ctx, query, symbol)
 	if err != nil {
@@ -126,7 +126,7 @@ func (m *repo) GetBySymbol(ctx context.Context, symbol string) (res []*models.Co
 
 func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (res []*models.Coin, err error) {
 	query := `SELECT date_trunc('day', created_at) AS "day", AVG(price) 
-				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<$3
+				FROM public.coins WHERE symbol=$1 AND created_at>=$2 AND created_at<$3
 				GROUP BY 1 
 				ORDER BY 1`
 	list, err := m.fetchByDate(ctx, query, symbol, start, end)
@@ -144,7 +144,7 @@ func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, en
 }
 
 func (m *repo) GetLatestPrice(ctx context.Context, symbol string) (res *models.Coin, err error) {
-	query := `SELECT * FROM coins WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`
+	query := `SELECT * FROM public.coins WHERE symbol = $1 ORDER BY created_at DESC LIMIT 1`
 
 	list, err := m.fetch(ctx, query, symbol)
 	if err != nil {
