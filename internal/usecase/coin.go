@@ -17,7 +17,7 @@ type app struct {
 // Usecase represent the coin's usecases
 type Usecase interface {
 	CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error
-	GetBySymbol(ctx context.Context, symbol string, date string, period string) (*[]models.Coin, error)
+	GetPrice(ctx context.Context, symbol string, date string, period string) ([]CoinPrice, error)
 }
 
 // Repository represent the coin's repository contract
@@ -25,6 +25,10 @@ type Repository interface {
 	Store(ctx context.Context, coin *models.Coin) error
 	GetBySymbol(ctx context.Context, symbol string) (*[]models.Coin, error)
 	GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (*[]models.Coin, error)
+	GetSymbolNames(ctx context.Context) ([]string, error)
+	GetLastPriceOnDate(ctx context.Context, symbol string, date time.Time) (*models.Coin, error)
+	GetLastPrice(ctx context.Context, symbol string) (*models.Coin, error)
+	GetLastPriceBeforeDate(ctx context.Context, symbol string, date time.Time) (*string, error)
 }
 
 // NewCoinUsecase will create new an articleUsecase object representation of article.Usecase interface
@@ -34,7 +38,12 @@ func NewCoinUsecase(repo Repository) Usecase {
 	}
 }
 
-func (a *app) GetBySymbol(c context.Context, symbol string, date string, period string) (*[]models.Coin, error) {
+type CoinPrice struct {
+	Date  string `json:"date"`
+	Price string `json:"value"`
+}
+
+func (a *app) GetPrice(c context.Context, symbol string, date string, period string) ([]CoinPrice, error) {
 	if date != "" || period != "" {
 		layout := "02-01-2006"
 		end, err := time.Parse(layout, date)
@@ -54,15 +63,51 @@ func (a *app) GetBySymbol(c context.Context, symbol string, date string, period 
 		default:
 			return nil, errors.New(fmt.Sprintf("Incorrect format : %s", period))
 		}
-		res, err := a.repo.GetByDate(c, symbol, start, end)
+		days := end.Sub(start).Hours() / 24
+		temp := make(map[string]string)
+		keys := make([]string, int(days))
+		for i := 0; i < int(days); i++ {
+			start = end.AddDate(0, 0, -i)
+			key := start.Format("02-01-2006")
+			temp[key] = "0"
+			keys[i] = key
+		}
+
+		coins, err := a.repo.GetByDate(c, symbol, start, end)
 		if err != nil {
 			return nil, err
 		}
+		for _, c := range *coins {
+			key := c.CreatedAt.Format("02-01-2006")
+			temp[key] = c.Price
+		}
+		res := make([]CoinPrice, int(days))
+		for i, k := range keys {
+			res[i].Date = k
+			if temp[k] != "0" {
+				res[i].Price = temp[k]
+			} else {
+				res[i].Price = temp[k]
+				date, _ := time.Parse("02-01-2006", k)
+				date.Add(23*60*60 + 59*60 + 59)
+				p, _ := a.repo.GetLastPriceBeforeDate(c, symbol, date)
+				if p != nil {
+					res[i].Price = *p
+				}
+			}
+		}
+
 		return res, nil
 	}
-	res, err := a.repo.GetBySymbol(c, symbol)
+	coins, err := a.repo.GetBySymbol(c, symbol)
 	if err != nil {
 		return nil, err
+	}
+
+	res := make([]CoinPrice, len(*coins))
+	for i, c := range *coins {
+		res[i].Date = c.CreatedAt.Format("02-01-2006")
+		res[i].Price = c.Price
 	}
 
 	return res, nil

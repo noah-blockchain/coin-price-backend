@@ -54,11 +54,11 @@ func TestGetByDate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(res) > 0 {
-		if len(res) != 1 {
+	if len(*res) > 0 {
+		if len(*res) != 1 {
 			t.Errorf("Should return result for one day")
 		}
-		if res[0].CreatedAt.Format("02-01-2006") != "10-12-2019" {
+		if (*res)[0].CreatedAt.Format("02-01-2006") != "10-12-2019" {
 			t.Errorf("Should return result for day 10-12-2019 ")
 		}
 	}

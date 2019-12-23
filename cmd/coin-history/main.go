@@ -3,6 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/google/uuid"
+	"github.com/nats-io/stan.go"
+	"github.com/noah-blockchain/coin-price-backend/internal/nats_consumer"
 	"log"
 	"net/http"
 	"os"
@@ -10,17 +14,13 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/nats-io/stan.go"
 	"github.com/noah-blockchain/coin-price-backend/internal/api"
 	"github.com/noah-blockchain/coin-price-backend/internal/config"
 	"github.com/noah-blockchain/coin-price-backend/internal/env"
-	"github.com/noah-blockchain/coin-price-backend/internal/nats_consumer"
 	"github.com/noah-blockchain/coin-price-backend/internal/repository"
 	"github.com/noah-blockchain/coin-price-backend/internal/usecase"
 )
@@ -98,7 +98,7 @@ func main() {
 	nats_consumer.StartConsumer(sc, app)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/prices/{symbol}", handler.GetAllRecords).Methods("GET")
+	router.HandleFunc("/prices/{symbol}", handler.GetPrice).Methods("GET")
 	fmt.Println("Starting coin-history service with port", cfg.ServicePort)
 	log.Panicln(http.ListenAndServe(fmt.Sprintf(":%d", cfg.ServicePort), router))
 }

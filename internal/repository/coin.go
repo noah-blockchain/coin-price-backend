@@ -29,13 +29,73 @@ func (m *repo) GetBySymbol(ctx context.Context, symbol string) (*[]models.Coin, 
 	return &history, nil
 }
 
+func (m *repo) GetSymbolNames(ctx context.Context) ([]string, error) {
+	var symbolNames []string
+	var err error
+	err = m.db.Select(&symbolNames, "SELECT DISTINCT(symbol) FROM coins")
+	if err != nil {
+		return nil, err
+	}
+	return symbolNames, nil
+}
+
+func (m *repo) GetLastPriceBeforeDate(ctx context.Context, symbol string, date time.Time) (*string, error) {
+	var lastPrice string
+	var err error
+
+	stmt, err := m.db.Preparex(`SELECT last(price, created_at)
+									  FROM coins
+									  WHERE symbol = $1 AND created_at < $2`)
+
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.Get(&lastPrice, symbol, date)
+	if err != nil {
+		return nil, err
+	}
+	return &lastPrice, nil
+}
+
+func (m *repo) GetLastPriceOnDate(ctx context.Context, symbol string, date time.Time) (*models.Coin, error) {
+	var coin models.Coin
+	var err error
+	stmt, err := m.db.Preparex(`SELECT * from coins 
+									WHERE symbol=$1 AND date_trunc('day', created_at) = $2 
+									ORDER BY created_at DESC LIMIT 1`)
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.Get(&coin, symbol, date)
+	if err != nil {
+		return nil, err
+	}
+	return &coin, nil
+}
+
+func (m *repo) GetLastPrice(ctx context.Context, symbol string) (*models.Coin, error) {
+	var coin models.Coin
+	var err error
+	stmt, err := m.db.Preparex(`SELECT * FROM coins 
+ 									  WHERE symbol = $1
+									  ORDER BY created_at DESC LIMIT 1`)
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.Get(&coin, symbol)
+	if err != nil {
+		return nil, err
+	}
+	return &coin, nil
+}
+
 func (m *repo) GetByDate(ctx context.Context, symbol string, start time.Time, end time.Time) (*[]models.Coin, error) {
 	query := `SELECT date_trunc('day', created_at) AS "day", AVG(price) 
 				FROM coins WHERE symbol=$1 AND created_at>=$2 AND created_at<$3
 				GROUP BY 1 
 				ORDER BY 1`
 	list, err := m.fetchByDate(ctx, query, symbol, start, end)
-	if err != nil || list == nil {
+	if err != nil {
 		return nil, err
 	}
 

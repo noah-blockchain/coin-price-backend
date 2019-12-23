@@ -8,13 +8,8 @@ import (
 	"net/http"
 )
 
-type CoinPrice struct {
-	Date  string `json:"date"`
-	Price string `json:"value"`
-}
-
-// GetAllSymbolRecords will get all records for given symbol
-func (a *CoinHandler) GetAllRecords(w http.ResponseWriter, r *http.Request) {
+// Get price of coin for date range
+func (a *CoinHandler) GetPrice(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	symbol := vars["symbol"]
 	period := r.URL.Query().Get("period")
@@ -25,18 +20,13 @@ func (a *CoinHandler) GetAllRecords(w http.ResponseWriter, r *http.Request) {
 		ctx = context.Background()
 	}
 
-	coinList, err := a.app.GetBySymbol(ctx, symbol, date, period)
-	if err != nil || coinList == nil {
+	coinList, err := a.app.GetPrice(ctx, symbol, date, period)
+	if err != nil {
 		respondWithError(w, getStatusCode(err), err.Error())
 		return
 	}
 
-	result := make([]CoinPrice, len(*coinList))
-	for i, c := range *coinList {
-		result[i].Price = c.Price
-		result[i].Date = c.CreatedAt.Format("02-01-2006")
-	}
-	respondWithJSON(w, getStatusCode(err), result)
+	respondWithJSON(w, getStatusCode(err), coinList)
 }
 
 func getStatusCode(err error) int {
