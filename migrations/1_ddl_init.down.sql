@@ -1,2 +1,2 @@
-DROP TABLE coins;
+DROP TABLE public.coins;
 DROP SCHEMA public;

@@ -92,13 +92,13 @@ func main() {
 		log.Panicln(err)
 	}
 
-	repo := repository.NewPsqlCoinRepository(dbConn.DB)
+	repo := repository.NewPsqlCoinRepository(dbConn)
 	app := usecase.NewCoinUsecase(repo)
 	handler := api.NewCoinPriceHandler(app)
 	nats_consumer.StartConsumer(sc, app)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/prices/{symbol}", handler.GetAllRecords).Methods("GET")
+	router.HandleFunc("/prices/{symbol}", handler.GetPrice).Methods("GET")
 	fmt.Println("Starting coin-history service with port", cfg.ServicePort)
 	log.Panicln(http.ListenAndServe(fmt.Sprintf(":%d", cfg.ServicePort), router))
 }
