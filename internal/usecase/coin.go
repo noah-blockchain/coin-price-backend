@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/noah-blockchain/coin-price-backend/internal/helpers"
 	"time"
 
 	"github.com/noah-blockchain/coin-price-backend/internal/models"
@@ -31,7 +32,7 @@ type Repository interface {
 	GetLastPriceBeforeDate(ctx context.Context, symbol string, date time.Time) (*string, error)
 }
 
-// NewCoinUsecase will create new an articleUsecase object representation of article.Usecase interface
+// NewCoinUsecase will create new an articleUsecase object representation of Usecase interface
 func NewCoinUsecase(repo Repository) Usecase {
 	return &app{
 		repo: repo,
@@ -85,14 +86,14 @@ func (a *app) GetPrice(c context.Context, symbol string, date string, period str
 		for i, k := range keys {
 			res[i].Date = k
 			if temp[k] != "0" {
-				res[i].Price = temp[k]
+				res[i].Price = helpers.QNoahStr2Noah(temp[k])
 			} else {
 				res[i].Price = temp[k]
 				date, _ := time.Parse("02-01-2006", k)
 				date.Add(23*60*60 + 59*60 + 59)
 				p, _ := a.repo.GetLastPriceBeforeDate(c, symbol, date)
 				if p != nil {
-					res[i].Price = *p
+					res[i].Price = helpers.QNoahStr2Noah(*p)
 				}
 			}
 		}
@@ -107,7 +108,7 @@ func (a *app) GetPrice(c context.Context, symbol string, date string, period str
 	res := make([]CoinPrice, len(*coins))
 	for i, c := range *coins {
 		res[i].Date = c.CreatedAt.Format("02-01-2006")
-		res[i].Price = c.Price
+		res[i].Price = helpers.QNoahStr2Noah(c.Price)
 	}
 
 	return res, nil

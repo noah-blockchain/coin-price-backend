@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// ArticleHandler  represent the httphandler for article
+// CoinHandler  represent the http handler for coin-history
 type CoinHandler struct {
 	app usecase.Usecase
 }
