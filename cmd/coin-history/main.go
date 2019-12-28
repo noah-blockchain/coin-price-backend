@@ -99,6 +99,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/prices/{symbol}", handler.GetPrice).Methods("GET")
+	router.HandleFunc("/addresses/{address}", handler.GetPrice).Methods("GET")
 	fmt.Println("Starting coin-history service with port", cfg.ServicePort)
 	log.Panicln(http.ListenAndServe(fmt.Sprintf(":%d", cfg.ServicePort), router))
 }
@@ -118,6 +119,6 @@ func runMigrations(driver database.Driver) error {
 		log.Printf("Cannot create migrate instance: %s", err)
 		return err
 	}
-	_ = m.Steps(2)
+	_ = m.Steps(3)
 	return nil
 }
