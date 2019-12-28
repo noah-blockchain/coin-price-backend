@@ -3,10 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/google/uuid"
-	"github.com/nats-io/stan.go"
-	"github.com/noah-blockchain/coin-price-backend/internal/nats_consumer"
 	"log"
 	"net/http"
 	"os"
@@ -14,13 +10,17 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	_ "github.com/nats-io/stan.go"
 	"github.com/noah-blockchain/coin-price-backend/internal/api"
 	"github.com/noah-blockchain/coin-price-backend/internal/config"
 	"github.com/noah-blockchain/coin-price-backend/internal/env"
+	_ "github.com/noah-blockchain/coin-price-backend/internal/nats_consumer"
 	"github.com/noah-blockchain/coin-price-backend/internal/repository"
 	"github.com/noah-blockchain/coin-price-backend/internal/usecase"
 )
@@ -33,8 +33,8 @@ func init() {
 	flag.StringVar(&cfg.DbUser, "db.user", os.Getenv("DB_USER"), "db user not exist")
 	flag.StringVar(&cfg.DbName, "db.name", os.Getenv("DB_NAME"), "db name not exist")
 	flag.StringVar(&cfg.DbPass, "db.pass", os.Getenv("DB_PASSWORD"), "db pass not exist")
-	flag.StringVar(&cfg.NatsClusterID, "nats.cluster_id", os.Getenv("NATS_CLUSTER_ID"), "nats cluster id")
-	flag.StringVar(&cfg.NatsAddr, "nats.addr", os.Getenv("NATS_ADDR"), "nats addr")
+	//flag.StringVar(&cfg.NatsClusterID, "nats.cluster_id", os.Getenv("NATS_CLUSTER_ID"), "nats cluster id")
+	//flag.StringVar(&cfg.NatsAddr, "nats.addr", os.Getenv("NATS_ADDR"), "nats addr")
 	flag.IntVar(&cfg.ServicePort, "service_port", env.GetEnvAsInt("SERVICE_PORT", 10500), "service port not exist")
 	flag.BoolVar(&cfg.Debug, "debug", env.GetEnvAsBool("DEBUG", true), "debug not exist")
 }
@@ -50,10 +50,10 @@ func main() {
 		log.Panicf("Invalid value %s for field %s", cfg.DbName, "db.name")
 	case cfg.DbPass == "":
 		log.Panicf("Invalid value %s for field %s", cfg.DbPass, "db.pass")
-	case cfg.NatsClusterID == "":
-		log.Panicf("Invalid value %s for field %s", cfg.NatsClusterID, "nats.cluster_id")
-	case cfg.NatsAddr == "":
-		log.Panicf("Invalid value %s for field %s", cfg.NatsAddr, "nats.addr")
+	//case cfg.NatsClusterID == "":
+	//	log.Panicf("Invalid value %s for field %s", cfg.NatsClusterID, "nats.cluster_id")
+	//case cfg.NatsAddr == "":
+	//	log.Panicf("Invalid value %s for field %s", cfg.NatsAddr, "nats.addr")
 	case cfg.ServicePort <= 0:
 		log.Panicf("Invalid value %d for field %s", cfg.ServicePort, "service_port")
 	case cfg.DbPort <= 0:
@@ -79,15 +79,15 @@ func main() {
 		log.Panicln(err)
 	}
 
-	sc, err := stan.Connect(
-		cfg.NatsClusterID,
-		uuid.New().String(),
-		stan.NatsURL(cfg.NatsAddr),
-		stan.Pings(5, 15),
-		stan.SetConnectionLostHandler(func(con stan.Conn, reason error) {
-			log.Fatalf("Connection lost, reason: %v", reason)
-		}),
-	)
+	//sc, err := stan.Connect(
+	//	cfg.NatsClusterID,
+	//	uuid.New().String(),
+	//	stan.NatsURL(cfg.NatsAddr),
+	//	stan.Pings(5, 15),
+	//	stan.SetConnectionLostHandler(func(con stan.Conn, reason error) {
+	//		log.Fatalf("Connection lost, reason: %v", reason)
+	//	}),
+	//)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -95,7 +95,7 @@ func main() {
 	repo := repository.NewPsqlCoinRepository(dbConn)
 	app := usecase.NewCoinUsecase(repo)
 	handler := api.NewCoinPriceHandler(app)
-	nats_consumer.StartConsumer(sc, app)
+	//	nats_consumer.StartConsumer(sc, app)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/prices/{symbol}", handler.GetPrice).Methods("GET")
