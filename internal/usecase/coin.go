@@ -4,11 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/noah-blockchain/coin-price-backend/internal/helpers"
 	"time"
 
+	"github.com/noah-blockchain/coin-price-backend/internal/helpers"
 	"github.com/noah-blockchain/coin-price-backend/internal/models"
 	coin_extender "github.com/noah-blockchain/coinExplorer-tools"
+)
+
+const (
+	precision        = 100
+	endOfDayDuration = (23*60*60 + 59*60 + 59) * time.Second
+	timeParseLayout  = "02-01-2006"
 )
 
 type app struct {
@@ -18,6 +24,7 @@ type app struct {
 // Usecase represent the coin's usecases
 type Usecase interface {
 	CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error
+	CreateAddressHistory(ctx context.Context, address coin_extender.Address) error
 	GetPrice(ctx context.Context, symbol string, date string, period string) ([]CoinPrice, error)
 	GetAddressBalance(ctx context.Context, address string, date string, period string) ([]Balance, error)
 }
@@ -31,7 +38,7 @@ type Repository interface {
 	GetSymbolNames(ctx context.Context) ([]string, error)
 	GetLastPriceOnDate(ctx context.Context, symbol string, date time.Time) (*models.Coin, error)
 	GetLastPrice(ctx context.Context, symbol string) (*models.Coin, error)
-	GetLastPriceBeforeDate(ctx context.Context, symbol string, date time.Time) (*string, error)
+	GetLastPriceBeforeDate(ctx context.Context, symbol string, date time.Time) (string, error)
 	GetAddressBalances(ctx context.Context, address string, date time.Time) ([]models.Address, error)
 }
 
@@ -54,30 +61,22 @@ type Balance struct {
 
 func (a *app) GetPrice(c context.Context, symbol string, date string, period string) ([]CoinPrice, error) {
 	if date != "" || period != "" {
-		layout := "02-01-2006"
-		end, err := time.Parse(layout, date)
+		end, err := a.parseAndGetEndOfDay(date)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Failed to parse date format : %s", date))
+			return nil, err
 		}
-		end = end.Add((23*60*60 + 59*60 + 59) * time.Second) // date must be with 23:59:59 time in the end
 
-		var start time.Time
-		switch period {
-		case "WEEK":
-			start = end.AddDate(0, 0, -7)
-		case "MONTH":
-			start = end.AddDate(0, -1, 0)
-		case "YEAR":
-			start = end.AddDate(-1, 0, 0)
-		default:
-			return nil, errors.New(fmt.Sprintf("Incorrect format : %s", period))
+		start, err := a.getStartOfPeriod(end, period)
+		if err != nil {
+			return nil, err
 		}
+
 		days := end.Sub(start).Hours() / 24
 		temp := make(map[string]string)
 		keys := make([]string, int(days))
 		for i := 0; i < int(days); i++ {
 			start = end.AddDate(0, 0, -i)
-			key := start.Format("02-01-2006")
+			key := start.Format(timeParseLayout)
 			temp[key] = "0"
 			keys[i] = key
 		}
@@ -87,21 +86,18 @@ func (a *app) GetPrice(c context.Context, symbol string, date string, period str
 			return nil, err
 		}
 		for _, c := range *coins {
-			key := c.CreatedAt.Format("02-01-2006")
+			key := c.CreatedAt.Format(timeParseLayout)
 			temp[key] = c.Price
 		}
 		res := make([]CoinPrice, int(days))
 		for i, k := range keys {
 			res[i].Date = k
-			if temp[k] != "0" {
-				res[i].Price = temp[k]
-			} else {
-				res[i].Price = temp[k]
-				date, _ := time.Parse("02-01-2006", k)
-				date.Add(23*60*60 + 59*60 + 59)
-				p, _ := a.repo.GetLastPriceBeforeDate(c, symbol, date)
-				if p != nil {
-					res[i].Price = *p
+			res[i].Price = temp[k]
+			if temp[k] == "0" {
+				date, _ := a.parseAndGetEndOfDay(k)
+				p, err := a.repo.GetLastPriceBeforeDate(c, symbol, date)
+				if err == nil {
+					res[i].Price = p
 				}
 			}
 		}
@@ -115,7 +111,7 @@ func (a *app) GetPrice(c context.Context, symbol string, date string, period str
 
 	res := make([]CoinPrice, len(*coins))
 	for i, c := range *coins {
-		res[i].Date = c.CreatedAt.Format("02-01-2006")
+		res[i].Date = c.CreatedAt.Format(timeParseLayout)
 		res[i].Price = c.Price
 	}
 
@@ -124,50 +120,40 @@ func (a *app) GetPrice(c context.Context, symbol string, date string, period str
 
 func (a *app) GetAddressBalance(c context.Context, address string, date string, period string) ([]Balance, error) {
 	if date != "" || period != "" {
-		layout := "02-01-2006"
-		end, err := time.Parse(layout, date)
+		end, err := a.parseAndGetEndOfDay(date)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Failed to parse date format : %s", date))
+			return nil, err
 		}
-		end = end.Add((23*60*60 + 59*60 + 59) * time.Second) // date must be with 23:59:59 time in the end
 
-		var start time.Time
-		switch period {
-		case "WEEK":
-			start = end.AddDate(0, 0, -7)
-		case "MONTH":
-			start = end.AddDate(0, -1, 0)
-		case "YEAR":
-			start = end.AddDate(-1, 0, 0)
-		default:
-			return nil, errors.New(fmt.Sprintf("Incorrect format : %s", period))
+		start, err := a.getStartOfPeriod(end, period)
+		if err != nil {
+			return nil, err
 		}
+
 		days := end.Sub(start).Hours() / 24
 		temp := make(map[string]string)
 		keys := make([]string, int(days))
 		for i := 0; i < int(days); i++ {
 			start = end.AddDate(0, 0, -i)
-			key := start.Format("02-01-2006")
+			key := start.Format(timeParseLayout)
 			temp[key] = "0"
 			keys[i] = key
 		}
 		for _, key := range keys {
-			d, _ := time.Parse("02-01-2006", key)
-			d.Add(23*60*60 + 59*60 + 59)
+			d, _ := a.parseAndGetEndOfDay(key)
 			balances, err := a.repo.GetAddressBalances(c, address, d)
 			if err != nil {
 				return nil, err
 			}
 			if balances != nil {
-				sum := helpers.NewFloat(0, 100)
+				sum := helpers.NewFloat(0, precision)
 				for _, b := range balances {
 					price, err := a.repo.GetLastPriceBeforeDate(c, b.Symbol, d)
-					if err != nil {
-						return nil, err
+					if err == nil {
+						priceFloat, _ := helpers.NewFloat(0, precision).SetString(price)
+						amount, _ := helpers.NewFloat(0, precision).SetString(b.Amount)
+						sum.Add(sum, priceFloat.Mul(priceFloat, amount))
 					}
-					priceFloat, _ := helpers.NewFloat(0, 100).SetString(*price)
-					amount, _ := helpers.NewFloat(0, 100).SetString(b.Amount)
-					sum.Add(sum, priceFloat.Mul(priceFloat, amount))
 				}
 				temp[key] = sum.String()
 			}
@@ -191,4 +177,27 @@ func (a *app) CreateCoinInfo(ctx context.Context, coin coin_extender.Coin) error
 		Volume:         coin.Volume,
 		CreatedAt:      time.Unix(coin.CreatedAt.Seconds, int64(coin.CreatedAt.Nanos)),
 	})
+}
+
+func (a *app) parseAndGetEndOfDay(date string) (time.Time, error) {
+	end, err := time.Parse(timeParseLayout, date)
+	if err != nil {
+		return time.Now(), errors.New(fmt.Sprintf("Failed to parse date format : %s", date))
+	}
+	return end.Add(endOfDayDuration), nil // date must be with 23:59:59 time in the end
+}
+
+func (a *app) getStartOfPeriod(end time.Time, period string) (time.Time, error) {
+	var start time.Time
+	switch period {
+	case "WEEK":
+		start = end.AddDate(0, 0, -7)
+	case "MONTH":
+		start = end.AddDate(0, -1, 0)
+	case "YEAR":
+		start = end.AddDate(-1, 0, 0)
+	default:
+		return time.Now(), errors.New(fmt.Sprintf("Incorrect format : %s", period))
+	}
+	return start, nil
 }

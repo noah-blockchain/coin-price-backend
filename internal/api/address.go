@@ -5,15 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/noah-blockchain/coin-price-backend/internal/models"
+	"github.com/noah-blockchain/coinExplorer-tools/helpers"
 )
 
 // Get price of coin for date range
 func (a *CoinHandler) GetAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := vars["address"]
+	if len(address) != 45 {
+		respondWithError(w, http.StatusBadRequest, models.ErrWrongNoahAddress.Error())
+		return
+	}
+
 	period := r.URL.Query().Get("period")
 	date := r.URL.Query().Get("date")
-	address = removeNoahPrefix(address)
+	address = helpers.RemovePrefixFromAddress(address)
 	ctx := r.Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -26,8 +33,4 @@ func (a *CoinHandler) GetAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, getStatusCode(err), balances)
-}
-
-func removeNoahPrefix(raw string) string {
-	return raw[5:]
 }

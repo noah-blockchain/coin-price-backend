@@ -149,6 +149,8 @@ github.com/nats-io/stan.go v0.5.2 h1:/DfflNAztFQVjssQ7hW8d9gWl3hU+SJ3mWjokaQEsog
 github.com/nats-io/stan.go v0.5.2/go.mod h1:eIcD5bi3pqbHT/xIIvXMwvzXYElgouBvaVRftaE+eac=
 github.com/noah-blockchain/coinExplorer-tools v0.1.7 h1:3ZeVlsAIGg1YYnelTORAfKzNSFoAnPOMeT+Y4L3Rbp8=
 github.com/noah-blockchain/coinExplorer-tools v0.1.7/go.mod h1:uXhLmYB2VqRa5mpktWFHFymkwhq7JPwyGZ1T562NvPk=
+github.com/noah-blockchain/coinExplorer-tools v0.1.8 h1:dV3LiJWsGkalu8J/t+ERNbF4TT4i8BV4wD1fI5X8244=
+github.com/noah-blockchain/coinExplorer-tools v0.1.8/go.mod h1:uXhLmYB2VqRa5mpktWFHFymkwhq7JPwyGZ1T562NvPk=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
