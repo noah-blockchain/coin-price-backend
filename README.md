@@ -1,4 +1,10 @@
 # coin-price-backend
+
+[![last commit](https://img.shields.io/github/last-commit/noah-blockchain/coin-price-backend.svg)]()
+[![license](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/noah-blockchain/coin-price-backend/blob/master/LICENSE)
+[![version](https://img.shields.io/github/tag/noah-blockchain/coin-price-backend.svg)](https://github.com/noah-blockchain/coin-price-backend/releases/latest)
+[![](https://tokei.rs/b1/github/noah-blockchain/coin-price-backend?category=lines)](https://github.com/noah-blockchai/coin-price-backend)
+
 ### How To Run This Project
 > Make Sure you have run the coins.sql in your postgres
 

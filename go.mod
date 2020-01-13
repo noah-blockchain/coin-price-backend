@@ -14,6 +14,5 @@ require (
 	github.com/nats-io/stan.go v0.5.2
 	github.com/noah-blockchain/coinExplorer-tools v0.1.7
 	github.com/sirupsen/logrus v1.4.1
-	golang.org/x/tools v0.0.0-20190606124116-d0a3d012864b // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 )
